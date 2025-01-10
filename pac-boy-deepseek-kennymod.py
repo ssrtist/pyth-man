@@ -10,7 +10,6 @@ SAME_LEVEL = 2
 MAX_LEVEL = 2
 BEAN_NUM = [261, 223]
 ENEMY_NUM = 4
-SPEED = 5
 MUSIC_B = [1, 2, 3, 4, 1, 2, 3, 4, 1]
 
 # Status
@@ -31,6 +30,22 @@ ENEMY_COLOR = pygame.Color(253, 253, 253)
 BEAN_COLOR = pygame.Color(0, 0, 255)
 WALL_COLOR = pygame.Color('lightblue')
 DOOR_COLOR = pygame.Color(0, 255, 0)
+WALL_WIDTH = 2
+
+# Screen dimensions
+SCREEN_WIDTH = 1024
+SCREEN_HEIGHT = 768
+atom = SCREEN_WIDTH // 16
+print ('atom is ' + str(atom))
+unit1 = atom // 2 - 7
+SPEED = atom // 8
+print ('speed is ' + str(SPEED))
+pit = atom // (SPEED * 2)
+print ('pit is ' + str(pit))
+maxX = SCREEN_WIDTH - atom
+maxY = SCREEN_HEIGHT - atom
+minX = 0
+minY = 0
 
 # Directions
 VX = [0, SPEED, 0, -SPEED]
@@ -38,10 +53,6 @@ VY = [-SPEED, 0, SPEED, 0]
 
 # Initialize Pygame
 pygame.init()
-
-# Screen dimensions
-SCREEN_WIDTH = 800
-SCREEN_HEIGHT = 600
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Macpan")
 
@@ -75,18 +86,78 @@ eat = 0
 count = 0
 tone = 0
 MBPtr = 0
-atom = 40
-unit1 = atom // 2 - 7
-pit = atom // (SPEED * 2)
-maxX = SCREEN_WIDTH - 1
-maxY = SCREEN_HEIGHT - 1
-minX = 0
-minY = 0
 score = 0
 high = 0
 level = 1
 die = False
 MusicOn = True
+
+# Level data
+lrows = [['0000000000000000',
+'2311111311111330',
+'2120111001112030',
+'2232301311232320',
+'2212231003320320',
+'2022222132222020',
+'1030110010112101',
+'3200330312310221',
+'2013011001121120',
+'2212013131120320',
+'2020110200112020',
+'0111111111111110'],
+['0000000000000000',
+'2311111311111330',
+'2122113221132030',
+'2210111001110320',
+'2023230112323020',
+'2211222132201320',
+'1223010010123201',
+'3022230312322021',
+'2212203021220320',
+'2032011201122120',
+'2301230112301230',
+'0111111111111110']]
+lsides = [[
+[1,2,1,2],
+[14,15,1,2],
+[2,3,3,4],
+[2,3,3,4],
+[13,14,3,4],
+[4,5,3,6],
+[11,12,3,6],
+[5,6,4,6],
+[10,11,4,6],
+[5,6,7,8],
+[10,11,7,8],
+[7,9,5,6],
+[-1,-1,-1,-1],
+[-1,-1,-1,-1],
+[-1,-1,-1,-1],
+[-1,-1,-1,-1],
+[-1,-1,-1,-1],
+[-1,-1,-1,-1],
+[-1,-1,-1,-1],
+[-1,-1,-1,-1]],
+[[1,2,1,2],
+[14,15,1,2],
+[4,7,2,3],
+[9,12,2,3],
+[3,4,4,5],
+[5,6,4,6],
+[10,11,4,6],
+[12,13,4,5],
+[2,3,8,9],
+[3,4,6,10],
+[5,6,7,9],
+[6,7,8,9],
+[9,10,8,9],
+[10,11,7,9],
+[12,13,6,10],
+[13,14,8,9],
+[1,2,10,11],
+[5,6,10,11],
+[10,11,10,11],
+[7,9,5,6]]]
 
 def chdir(direction, by):
     return (direction + by - 1) % 4 + 1
@@ -117,7 +188,8 @@ def INIT():
     screen.fill((0, 0, 0))
     font = pygame.font.SysFont(None, 36)
     text = font.render('Does this system has a VGA or SVGA card (Y/N)?', True, (255, 255, 255))
-    screen.blit(text, (10, 20))
+    title1xy = (SCREEN_WIDTH // 64, SCREEN_HEIGHT // 24)
+    screen.blit(text, title1xy)
     pygame.display.flip()
 
     key = None
@@ -129,13 +201,14 @@ def INIT():
     if key == pygame.K_y:
         driver = 0
         mode = 1
-        atom = 40
+        #atom = 40
     else:
         print("Then Get ONE!!!  Step on this cheap computer!!")
         pygame.quit()
         sys.exit()
 
     text = font.render('DO YOU WANT MUSIC DURING GAME (Y/N)?', True, (255, 255, 255))
+    title1xy = (SCREEN_WIDTH // 64, SCREEN_HEIGHT // 24 + 50)
     screen.blit(text, (10, 50))
     pygame.display.flip()
 
@@ -180,8 +253,10 @@ def box(xl, xr, yu, yd, bcolor, acolor):
 def makeenemy():
     print ('making enemy...')
     global enemy
-    x = 320
-    y = 100
+    #x = 320
+    #y = 100
+    x = SCREEN_WIDTH / 2
+    y = SCREEN_HEIGHT / 4
     for count in range(0,3):
         box(x - unit1 - 1, x + unit1 + 1, y - unit1 - 1, y + unit1 + 1, 1, 0)
         #E_COLOR = ((count+1)*30, (count*2+1)*30, (count*2+2)*30)
@@ -214,8 +289,10 @@ def makepac():
     print ('making pac...')
     pparams = [[135,405,1],[45,315,2],[315,585,3],[225,495,4]]
     # global pac
-    x = 200
-    y = 220
+    #x = 200
+    #y = 220
+    x = SCREEN_WIDTH / 16 * 5
+    y = SCREEN_HEIGHT / 2
     for dir in range(1, 5):
         for count in range(1, 6):
             print ('making pac... ' + str(dir-1) + ' ' + str(count-1))
@@ -223,10 +300,10 @@ def makepac():
             y += VY[dir - 1] * 8
             a1 = (pparams[dir-1][0] - count * 9) /180*3.14
             a2 = (pparams[dir-1][1] + count * 9) /180*3.14
-            print ('drawing arc... x:'+ str(x - unit1) + ' y:' + str(y - unit1) + ' w:' + str(unit1 * 2) + ' h:' + str(unit1 * 2) + ' a1:' + str(pparams[dir-1][0]) + ' r1:' + str(a1) + ' a2:' + str(pparams[dir-1][1]) + ' r2:' + str(a2))
+            #print ('drawing arc... x:'+ str(x - unit1) + ' y:' + str(y - unit1) + ' w:' + str(unit1 * 2) + ' h:' + str(unit1 * 2) + ' a1:' + str(pparams[dir-1][0]) + ' r1:' + str(a1) + ' a2:' + str(pparams[dir-1][1]) + ' r2:' + str(a2))
             pygame.draw.arc(screen, PAC_COLOR, (x - unit1, y - unit1, unit1 * 2, unit1 * 2), a1, a2, 1)
             pygame.display.flip()
-            print ('capturing pac ')
+            print ('capturing pac ' + str(dir-1) + ' ' + str(count-1))
             # pac[dir - 1][count - 1] = pygame.Surface((unit1 * 2, unit1 * 2), pygame.SRCALPHA)
             rect1 = (x - unit1, y - unit1, unit1 * 2, unit1 * 2)
             pac[dir - 1][count - 1] = screen.subsurface(rect1).copy()
@@ -235,18 +312,48 @@ def makepac():
 
 def background():
     print ('background...')
+    #print (lrows)
     global level
     screen.fill((0, 0, 0))
     font = pygame.font.SysFont(None, 48)
     text = font.render('PYTH-MAN', True, PAC_COLOR)
     screen.blit(text, (50, 0))
-    for y in range(atom, maxY, atom):
-        for x in range(atom, maxX, atom):
+    #for y in range(atom, maxY, atom):
+    #    for x in range(atom, maxX, atom):
+    #        box(x - 1, x + 1, y - 1, y + 1, BEAN_COLOR, 0)
+    #        print (str(x // atom - 1), str(y // atom - 1))
+    #for y in range(atom, maxY-atom*2, atom):
+    for iy in range(0, 12, 1):
+        mrow = ''
+        #for x in range(atom, maxX-atom*3, atom):
+        for ix in range(0, 16, 1):
+            x = ix * atom
+            y = iy * atom
             box(x - 1, x + 1, y - 1, y + 1, BEAN_COLOR, 0)
+            #print (str(x // atom - 1), str(y // atom - 1))
+            #mcell = (lrows[0][y//atom-1][x//atom-1])
+            #print (str(x), str(y))
+            mcell = (lrows[0][iy][ix])
+            mrow += mcell
+            match mcell:
+                case '0':
+                    1 == 1
+                    #print ('(0:none)')
+                case '1':
+                    #print ('(1:roof)')
+                    pygame.draw.line(screen, WALL_COLOR, (x, y), (x + atom, y), WALL_WIDTH)
+                case '2':
+                    #print ('(2:wall)')
+                    pygame.draw.line(screen, WALL_COLOR, (x + atom, y), (x + atom, y + atom), WALL_WIDTH)
+                case '3':
+                    #print ('(3:both)')
+                    pygame.draw.line(screen, WALL_COLOR, (x, y), (x + atom, y), WALL_WIDTH)
+                    pygame.draw.line(screen, WALL_COLOR, (x + atom, y), (x + atom, y + atom), WALL_WIDTH)
+        print (mrow) #level row data
     pygame.display.flip()
 
 def playpac():
-    print ('playing pac...')
+    # print ('playing pac...')
     global PacX, PacY, pdir, newpdir, pose, oldpacX, oldpacY, oldpdir, oldpose, eat, die
     # debug msg below
     # print ('blit pac ' + str(oldpdir -1) + ' ' + str(oldpose - 1), (90, 0))
@@ -442,20 +549,25 @@ def Title():
     MusicT = [2, 3, 4, 6, 6, 7, 6, 4, 2, 3, 4, 4, 3, 2, 3, 2, 3, 4, 6, 6, 7, 6, 4, 2, 3, 4, 4, 3, 3, 2]
     TimeT = [0, 0, 2, 2, 4, 1, 3, 3, 4, 1, 3, 3, 3, 3, 5, 1, 0, 1, 2, 4, 1, 3, 3, 4, 1, 3, 3, 3, 3, 7]
     Menu()
+    title1xy = (SCREEN_WIDTH // 64, SCREEN_HEIGHT // 2)
     screen.fill((0, 0, 0))
     font = pygame.font.SysFont(None, 72)
     text = font.render('PYTH-MAN', True, PAC_COLOR)
-    screen.blit(text, (10, 250))
+    screen.blit(text, title1xy)
     font = pygame.font.SysFont(None, 36)
     text = font.render('V-Rated', True, PAC_COLOR)
-    screen.blit(text, (450, 280))
+    title1xy = (SCREEN_WIDTH // 16 * 11, SCREEN_HEIGHT // 2)
+    screen.blit(text, title1xy)
     font = pygame.font.SysFont(None, 36)
     text = font.render('Version 2.0  By SSRTIST', True, (0, 255, 255))
-    screen.blit(text, (50, 320))
+    title1xy = (SCREEN_WIDTH // 64, SCREEN_HEIGHT // 12 * 8)
+    screen.blit(text, title1xy)
     text = font.render('Copyright SillyMelon Corp. 1992-2025.', True, (0, 255, 255))
-    screen.blit(text, (50, 360))
+    title1xy = (SCREEN_WIDTH // 64, SCREEN_HEIGHT // 12 * 9)
+    screen.blit(text, title1xy)
     text = font.render('All Rights Reserved.', True, (0, 255, 255))
-    screen.blit(text, (50, 400))
+    title1xy = (SCREEN_WIDTH // 64, SCREEN_HEIGHT // 12 * 10)
+    screen.blit(text, title1xy)
     pygame.display.flip()
     ClrBuffer()
     #MTPtr = 0
@@ -618,7 +730,7 @@ def main():
         print ('before game loop...')
         print ('die: ' + str(die))
         while not die: # and eat != BEAN_NUM[(level + 1) // SAME_LEVEL - 1]:
-            print ('inside game loop, die: ' + str(die) + ', eat: ' + str(eat))
+            # print ('inside game loop, die: ' + str(die) + ', eat: ' + str(eat))
             # play sprite sfx, not working
             # MBPtr = MBPtr + 1 if MBPtr < 9 else 1
             # playmusic(MUSIC_B[MBPtr - 1] * 100 + 400, 0, MusicOn)
