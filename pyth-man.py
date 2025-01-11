@@ -209,7 +209,7 @@ def INIT():
 
     text = font.render('DO YOU WANT MUSIC DURING GAME (Y/N)?', True, (255, 255, 255))
     title1xy = (SCREEN_WIDTH // 64, SCREEN_HEIGHT // 24 + 50)
-    screen.blit(text, (10, 50))
+    screen.blit(text, title1xy)
     pygame.display.flip()
 
     key = None
@@ -549,16 +549,14 @@ def Title():
     MusicT = [2, 3, 4, 6, 6, 7, 6, 4, 2, 3, 4, 4, 3, 2, 3, 2, 3, 4, 6, 6, 7, 6, 4, 2, 3, 4, 4, 3, 3, 2]
     TimeT = [0, 0, 2, 2, 4, 1, 3, 3, 4, 1, 3, 3, 3, 3, 5, 1, 0, 1, 2, 4, 1, 3, 3, 4, 1, 3, 3, 3, 3, 7]
     Menu()
-    title1xy = (SCREEN_WIDTH // 64, SCREEN_HEIGHT // 2)
     screen.fill((0, 0, 0))
     font = pygame.font.SysFont(None, 72)
     text = font.render('PYTH-MAN', True, PAC_COLOR)
-    screen.blit(text, title1xy)
+    screen.blit(text, (SCREEN_WIDTH // 64, SCREEN_HEIGHT // 2))
     font = pygame.font.SysFont(None, 36)
-    text = font.render('V-Rated', True, PAC_COLOR)
-    title1xy = (SCREEN_WIDTH // 16 * 11, SCREEN_HEIGHT // 2)
+    text = font.render('V-Rated', True, (0, 255, 255))
+    title1xy = (SCREEN_WIDTH // 64, SCREEN_HEIGHT // 12 * 7)
     screen.blit(text, title1xy)
-    font = pygame.font.SysFont(None, 36)
     text = font.render('Version 2.0  By SSRTIST', True, (0, 255, 255))
     title1xy = (SCREEN_WIDTH // 64, SCREEN_HEIGHT // 12 * 8)
     screen.blit(text, title1xy)
