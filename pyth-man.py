@@ -54,13 +54,14 @@ VY = [-SPEED, 0, SPEED, 0]
 # Initialize Pygame
 pygame.init()
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-pygame.display.set_caption("Macpan")
+pygame.display.set_caption("Pyth-Man")
 
 # Clock
 clock = pygame.time.Clock()
 
 # Global variables
 enemy = [None] * 4
+enemyback = [None] * 4
 edir = [0] * ENEMY_NUM
 newedir = [0] * ENEMY_NUM
 flag = [0] * ENEMY_NUM
@@ -69,6 +70,7 @@ enemyY = [0] * ENEMY_NUM
 control = [0] * ENEMY_NUM
 oldenemyX = [0] * ENEMY_NUM
 oldenemyY = [0] * ENEMY_NUM
+background = None
 
 pac = [[None for _ in range(5)] for _ in range(4)]
 pdir = RIGHT
@@ -302,6 +304,9 @@ def makepac():
             a2 = (pparams[dir-1][1] + count * 9) /180*3.14
             #print ('drawing arc... x:'+ str(x - unit1) + ' y:' + str(y - unit1) + ' w:' + str(unit1 * 2) + ' h:' + str(unit1 * 2) + ' a1:' + str(pparams[dir-1][0]) + ' r1:' + str(a1) + ' a2:' + str(pparams[dir-1][1]) + ' r2:' + str(a2))
             pygame.draw.arc(screen, PAC_COLOR, (x - unit1, y - unit1, unit1 * 2, unit1 * 2), a1, a2, 1)
+            #
+            # need more code to complete the pac drawing
+            #
             pygame.display.flip()
             print ('capturing pac ' + str(dir-1) + ' ' + str(count-1))
             # pac[dir - 1][count - 1] = pygame.Surface((unit1 * 2, unit1 * 2), pygame.SRCALPHA)
@@ -310,7 +315,7 @@ def makepac():
             pygame.time.delay(100)
             box(x - unit1 - 1, x + unit1 + 1, y - unit1 - 1, y + unit1 + 1, 1, 0)
 
-def background():
+def makebackground():
     print ('background...')
     #print (lrows)
     global level
@@ -323,18 +328,23 @@ def background():
     #        box(x - 1, x + 1, y - 1, y + 1, BEAN_COLOR, 0)
     #        print (str(x // atom - 1), str(y // atom - 1))
     #for y in range(atom, maxY-atom*2, atom):
+    dY = atom
+    while True:
+        dY += atom // 2
+        dX = atom
+        while True:
+            dX += atom // 2
+            box(dX - 1, dX + 1, dY - 1, dY + 1, BEAN_COLOR, 0)
+            if dX == atom * 15 - atom // 2:
+                break
+        if dY == atom * 11 - atom // 2:
+            break    
     for iy in range(0, 12, 1):
-        mrow = ''
-        #for x in range(atom, maxX-atom*3, atom):
         for ix in range(0, 16, 1):
             x = ix * atom
             y = iy * atom
-            box(x - 1, x + 1, y - 1, y + 1, BEAN_COLOR, 0)
-            #print (str(x // atom - 1), str(y // atom - 1))
-            #mcell = (lrows[0][y//atom-1][x//atom-1])
-            #print (str(x), str(y))
+            #box(x - 1, x + 1, y - 1, y + 1, BEAN_COLOR, 0)
             mcell = (lrows[0][iy][ix])
-            mrow += mcell
             match mcell:
                 case '0':
                     1 == 1
@@ -349,12 +359,12 @@ def background():
                     #print ('(3:both)')
                     pygame.draw.line(screen, WALL_COLOR, (x, y), (x + atom, y), WALL_WIDTH)
                     pygame.draw.line(screen, WALL_COLOR, (x + atom, y), (x + atom, y + atom), WALL_WIDTH)
-        print (mrow) #level row data
     pygame.display.flip()
+    return screen.subsurface((0, 0, SCREEN_WIDTH, SCREEN_HEIGHT)).copy()
 
 def playpac():
     # print ('playing pac...')
-    global PacX, PacY, pdir, newpdir, pose, oldpacX, oldpacY, oldpdir, oldpose, eat, die
+    global PacX, PacY, pdir, newpdir, pose, oldpacX, oldpacY, oldpdir, oldpose, eat, die, background
     # debug msg below
     # print ('blit pac ' + str(oldpdir -1) + ' ' + str(oldpose - 1), (90, 0))
     # screen.blit(pac[oldpdir - 1][oldpose - 1], (oldpacX - unit1, oldpacY - unit1))
@@ -364,6 +374,7 @@ def playpac():
     pose = pose + 1 if pose < 5 else 1
     screen.blit(pac[pdir - 1][pose - 1], (PacX - unit1, PacY - unit1))
     pygame.display.flip()
+    background = screen.subsurface((0, 0, SCREEN_WIDTH, SCREEN_HEIGHT)).copy()
     oldpacX = PacX
     oldpacY = PacY
     oldpdir = pdir
@@ -421,7 +432,8 @@ def playenemy():
     for num in range(ENEMY_NUM):
         if flag[num] != DEAD:
             #screen.blit(enemy[flag[num]], (oldenemyX[num] - unit1, oldenemyY[num] - unit1))
-            box(oldenemyX[num] - unit1, oldenemyX[num] + unit1, oldenemyY[num] - unit1, oldenemyY[num] + unit1, 1, 0)
+            #below is the original code to blank the enemy
+            #box(oldenemyX[num] - unit1, oldenemyX[num] + unit1, oldenemyY[num] - unit1, oldenemyY[num] + unit1, 1, 0)
             screen.blit(enemy[flag[num]], (enemyX[num] - unit1, enemyY[num] - unit1))
             pygame.display.flip()
             oldenemyX[num] = enemyX[num]
@@ -619,7 +631,7 @@ def coping():
         ClrBuffer()
         WaitKey()
         screen.fill((0, 0, 0))
-        background()
+        makebackground()
 
 def Dying():
     print ('dying...')
@@ -667,7 +679,7 @@ def GameOver():
     eat = 0
     Title()
     screen.fill((0, 0, 0))
-    background()
+    makebackground()
 
 def pacinit():
     print ('pac init...')
@@ -685,7 +697,7 @@ def pacinit():
     oldpose = 5
     pose = 5
     screen.blit(pac[1][4], (PacX - unit1, PacY - unit1))
-    pygame.time.delay(2000)
+    #pygame.time.delay(2000)
     pygame.display.flip()
 
 def enemyinit():
@@ -706,8 +718,9 @@ def enemyinit():
     pygame.display.flip()
 
 def main():
+    global background
     print ('main...')
-    INIT()
+    #INIT()
     Title()
     makeenemy()
     makepac()
@@ -719,7 +732,7 @@ def main():
     score = 0
     high = 0
     eat = 0
-    background()
+    background = makebackground()
     while True:
         ClrBuffer()
         pacinit()
@@ -732,6 +745,8 @@ def main():
             # play sprite sfx, not working
             # MBPtr = MBPtr + 1 if MBPtr < 9 else 1
             # playmusic(MUSIC_B[MBPtr - 1] * 100 + 400, 0, MusicOn)
+            #repaint entire background before blitting enemies and pac
+            screen.blit(background, (0,0))
             playpac()
             playenemy()
         print ('after game loop...')
