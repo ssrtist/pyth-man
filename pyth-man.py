@@ -26,11 +26,13 @@ LEFT = 4
 
 # Colors
 PAC_COLOR = pygame.Color('yellow')
-ENEMY_COLOR = pygame.Color(253, 253, 253)
-BEAN_COLOR = pygame.Color(0, 0, 255)
+ENEMY_COLOR = pygame.Color('red')
+ENEMY_FLEE_COLOR = pygame.Color('green')
+BEAN_COLOR = pygame.Color('gold')
 WALL_COLOR = pygame.Color('lightblue')
 DOOR_COLOR = pygame.Color(0, 255, 0)
-WALL_WIDTH = 2
+WALL_WIDTH = 3
+BEAN_SIZE = 3
 
 # Screen dimensions
 SCREEN_WIDTH = 1024
@@ -160,6 +162,7 @@ lsides = [[
 [5,6,10,11],
 [10,11,10,11],
 [7,9,5,6]]]
+bigbean = [[5,5], [27,5], [5,21], [27,21]]
 
 def chdir(direction, by):
     return (direction + by - 1) % 4 + 1
@@ -231,9 +234,14 @@ def playmusic(frequency, time, on):
     # pygame.time.delay(time)
 
 def addscore(gain):
-    print ('adding score...')
+    #print ('adding score...')
     global score, high
     score += gain
+    box(SCREEN_WIDTH - 100, SCREEN_WIDTH, 0, 50,  1, 0)
+    font = pygame.font.SysFont(None, 48)
+    text = font.render(str(score), True, PAC_COLOR)
+    screen.blit(text, (SCREEN_WIDTH - 100, 0))
+    #print ('score: ' + str(score))
     if score > high:
         high = score
 
@@ -252,40 +260,53 @@ def box(xl, xr, yu, yd, bcolor, acolor):
     pygame.draw.rect(screen, acolor, (xl, yu, xr - xl, yd - yu))
     pygame.draw.rect(screen, bcolor, (xl, yu, xr - xl, yd - yu), 1)
 
-def makeenemy():
-    print ('making enemy...')
-    global enemy
-    #x = 320
-    #y = 100
+def drawenemy(x, y, color):
     x = SCREEN_WIDTH / 2
     y = SCREEN_HEIGHT / 4
-    for count in range(0,3):
-        box(x - unit1 - 1, x + unit1 + 1, y - unit1 - 1, y + unit1 + 1, 1, 0)
-        #E_COLOR = ((count+1)*30, (count*2+1)*30, (count*2+2)*30)
-        E_COLOR = (count+1) * 3000000
-        pygame.draw.arc(screen, E_COLOR, (x - unit1, y - unit1, unit1 * 2, unit1 * 2), 0, 3.14, 1)
-        pygame.draw.line(screen, E_COLOR, (x - unit1, y), (x - unit1, y + unit1), 1)
-        pygame.draw.line(screen, E_COLOR, (x - unit1, y + unit1), (x - unit1 + unit1 * 2 // 5, y + unit1 - unit1 * 2 // 6), 1)
-        pygame.draw.line(screen, E_COLOR, (x - unit1 + unit1 * 2 // 5, y + unit1 - unit1 * 2 // 6), (x - unit1 + unit1 * 4 // 5, y + unit1), 1)
-        pygame.draw.line(screen, E_COLOR, (x - unit1 + unit1 * 4 // 5, y + unit1), (x - unit1 + unit1 * 6 // 5, y + unit1 - unit1 * 2 // 6), 1)
-        pygame.draw.line(screen, E_COLOR, (x - unit1 + unit1 * 6 // 5, y + unit1 - unit1 * 2 // 6), (x - unit1 + unit1 * 8 // 5, y + unit1), 1)
-        pygame.draw.line(screen, E_COLOR, (x - unit1 + unit1 * 8 // 5, y + unit1), (x + unit1, y), 1)
-        pygame.draw.circle(screen, E_COLOR, (x - unit1 // 2, y), unit1 // 3, 1)
-        pygame.draw.circle(screen, E_COLOR, (x + unit1 // 2, y), unit1 // 3, 1)
-        pygame.display.flip()
-        #enemy[FLEE] = pygame.Surface((unit1 * 2, unit1 * 2), pygame.SRCALPHA)
-        #enemy[DEAD] = pygame.Surface((unit1 * 2, unit1 * 2), pygame.SRCALPHA)
-        #enemy[FOLLOW] = pygame.Surface((unit1 * 2, unit1 * 2), pygame.SRCALPHA)
-        #enemy[AROUND] = pygame.Surface((unit1 * 2, unit1 * 2), pygame.SRCALPHA)
-        rect1 = (x - unit1, y - unit1, unit1 * 2, unit1 * 2)
-        enemy[count] = screen.subsurface(rect1).copy()
-        pygame.time.delay(200)
+    box(x - unit1 - 1, x + unit1 + 1, y - unit1 - 1, y + unit1 + 1, 1, 0)
+    pygame.draw.arc(screen, ENEMY_COLOR, (x - unit1, y - unit1, unit1 * 2, unit1 * 2), 0, 3.14, 1)
+    pygame.draw.line(screen, ENEMY_COLOR, (x - unit1, y), (x - unit1, y + unit1), 1)
+    pygame.draw.line(screen, ENEMY_COLOR, (x - unit1, y + unit1), (x - unit1 + unit1 * 2 // 5, y + unit1 - unit1 * 2 // 6), 1)
+    pygame.draw.line(screen, ENEMY_COLOR, (x - unit1 + unit1 * 2 // 5, y + unit1 - unit1 * 2 // 6), (x - unit1 + unit1 * 4 // 5, y + unit1), 1)
+    pygame.draw.line(screen, ENEMY_COLOR, (x - unit1 + unit1 * 4 // 5, y + unit1), (x - unit1 + unit1 * 6 // 5, y + unit1 - unit1 * 2 // 6), 1)
+    pygame.draw.line(screen, ENEMY_COLOR, (x - unit1 + unit1 * 6 // 5, y + unit1 - unit1 * 2 // 6), (x - unit1 + unit1 * 8 // 5, y + unit1), 1)
+    pygame.draw.line(screen, ENEMY_COLOR, (x - unit1 + unit1 * 8 // 5, y + unit1), (x + unit1, y), 1)
+    pygame.draw.circle(screen, ENEMY_COLOR, (x - unit1 // 2, y), unit1 // 3, 1)
+    pygame.draw.circle(screen, ENEMY_COLOR, (x + unit1 // 2, y), unit1 // 3, 1)
+    pygame.display.flip()
+    rect1 = (x - unit1, y - unit1, unit1 * 2, unit1 * 2)
     #enemy[FLEE] = screen.subsurface(rect1).copy()
     #enemy[DEAD] = screen.subsurface(rect1).copy()
     #enemy[FOLLOW] = screen.subsurface(rect1).copy()
     #enemy[AROUND] = screen.subsurface(rect1).copy()
-    #pygame.time.delay(200)
-    #box(x - unit1 - 1, x + unit1 + 1, y - unit1 - 1, y + unit1 + 1, 1, 0)
+    return screen.subsurface(rect1).copy()
+
+def makeenemy():
+    print ('making enemy...')
+    x = SCREEN_WIDTH / 2
+    y = SCREEN_HEIGHT / 4
+    box(x - unit1 - 1, x + unit1 + 1, y - unit1 - 1, y + unit1 + 1, 1, 0)
+    pygame.draw.arc(screen, ENEMY_COLOR, (x - unit1, y - unit1, unit1 * 2, unit1 * 2), 0, 3.14, 1)
+    pygame.draw.line(screen, ENEMY_COLOR, (x - unit1, y), (x - unit1, y + unit1), 1)
+    pygame.draw.line(screen, ENEMY_COLOR, (x - unit1, y + unit1), (x - unit1 + unit1 * 2 // 5, y + unit1 - unit1 * 2 // 6), 1)
+    pygame.draw.line(screen, ENEMY_COLOR, (x - unit1 + unit1 * 2 // 5, y + unit1 - unit1 * 2 // 6), (x - unit1 + unit1 * 4 // 5, y + unit1), 1)
+    pygame.draw.line(screen, ENEMY_COLOR, (x - unit1 + unit1 * 4 // 5, y + unit1), (x - unit1 + unit1 * 6 // 5, y + unit1 - unit1 * 2 // 6), 1)
+    pygame.draw.line(screen, ENEMY_COLOR, (x - unit1 + unit1 * 6 // 5, y + unit1 - unit1 * 2 // 6), (x - unit1 + unit1 * 8 // 5, y + unit1), 1)
+    pygame.draw.line(screen, ENEMY_COLOR, (x - unit1 + unit1 * 8 // 5, y + unit1), (x + unit1, y), 1)
+    pygame.draw.circle(screen, ENEMY_COLOR, (x - unit1 // 2, y), unit1 // 3, 1)
+    pygame.draw.circle(screen, ENEMY_COLOR, (x + unit1 // 2, y), unit1 // 3, 1)
+    pygame.display.flip()
+    rect1 = (x - unit1, y - unit1, unit1 * 2, unit1 * 2)
+    #enemy[count] = screen.subsurface(rect1).copy()
+    #enemy[FLEE] = screen.subsurface(rect1).copy()
+    #enemy[DEAD] = screen.subsurface(rect1).copy()
+    #enemy[FOLLOW] = screen.subsurface(rect1).copy()
+    #enemy[AROUND] = screen.subsurface(rect1).copy()
+    enemy[FLEE] = drawenemy(x, y, ENEMY_FLEE_COLOR)
+    enemy[DEAD] = drawenemy(x, y, ENEMY_COLOR)
+    enemy[FOLLOW] = drawenemy(x, y, ENEMY_COLOR)
+    enemy[AROUND] = drawenemy(x, y, ENEMY_COLOR)
+    pygame.time.delay(200)
 
 def makepac():
     print ('making pac...')
@@ -317,8 +338,6 @@ def makepac():
 
 def makebackground():
     print ('background...')
-    #print (lrows)
-    global level
     screen.fill((0, 0, 0))
     font = pygame.font.SysFont(None, 48)
     text = font.render('PYTH-MAN', True, PAC_COLOR)
@@ -328,17 +347,23 @@ def makebackground():
     #        box(x - 1, x + 1, y - 1, y + 1, BEAN_COLOR, 0)
     #        print (str(x // atom - 1), str(y // atom - 1))
     #for y in range(atom, maxY-atom*2, atom):
+    # make the small beans
     dY = atom
     while True:
         dY += atom // 2
         dX = atom
         while True:
             dX += atom // 2
-            box(dX - 1, dX + 1, dY - 1, dY + 1, BEAN_COLOR, 0)
+            box(dX - 1, dX + 1, dY - 1, dY + 1, BEAN_COLOR, BEAN_COLOR)
             if dX == atom * 15 - atom // 2:
                 break
         if dY == atom * 11 - atom // 2:
             break    
+    # make the big beans
+    for i in range(4):
+        print ('bigbean ' + str(i) + ': ' + str(bigbean[i][0]) + ' ' + str(bigbean[i][1]))
+        box(bigbean[i][0]*atom//2 - BEAN_SIZE, bigbean[i][0]*atom//2 + BEAN_SIZE, bigbean[i][1]*atom//2 - BEAN_SIZE, bigbean[i][1]*atom//2 + BEAN_SIZE, BEAN_COLOR, BEAN_COLOR)
+    # make the walls
     for iy in range(0, 12, 1):
         for ix in range(0, 16, 1):
             x = ix * atom
@@ -359,12 +384,22 @@ def makebackground():
                     #print ('(3:both)')
                     pygame.draw.line(screen, WALL_COLOR, (x, y), (x + atom, y), WALL_WIDTH)
                     pygame.draw.line(screen, WALL_COLOR, (x + atom, y), (x + atom, y + atom), WALL_WIDTH)
+    #LINE(atom*7, atom*6, atom*8, atom*6);
+    pygame.draw.line(screen, DOOR_COLOR, (atom*7, atom*6), (atom*8, atom*6), WALL_WIDTH)
+    #IF life>0 THEN FOR ct:= 1 TO life-1 DO
+    if life > 0:
+        for ct in range(1, life):
+            #PUTIMAGE(15*atom+speed, ct*atom, pac[2,1]^, XORPUT);
+            #screen.blit(pac[2][1], (15*atom + SPEED, ct*atom))
+            screen.blit(pac[1][1], (ct*atom, 11*atom + SPEED))
+
     pygame.display.flip()
+    addscore(0)
     return screen.subsurface((0, 0, SCREEN_WIDTH, SCREEN_HEIGHT)).copy()
 
 def playpac():
     # print ('playing pac...')
-    global PacX, PacY, pdir, newpdir, pose, oldpacX, oldpacY, oldpdir, oldpose, eat, die, background
+    global PacX, PacY, pdir, newpdir, pose, oldpacX, oldpacY, oldpdir, oldpose, eat, die, background, enemy, flag
     # debug msg below
     # print ('blit pac ' + str(oldpdir -1) + ' ' + str(oldpose - 1), (90, 0))
     # screen.blit(pac[oldpdir - 1][oldpose - 1], (oldpacX - unit1, oldpacY - unit1))
@@ -408,15 +443,17 @@ def playpac():
         if pointisthere(PacX + VX[pdir - 1] * (pit - 1) - 1, PacY + VY[pdir - 1] * (pit - 1), BEAN_COLOR):
             # if MusicOn:
                 # pygame.mixer.music.play(0)
+            # print ('eat bean...')
             eat += 1
             addscore(100)
             if pointisthere(PacX + VX[pdir - 1] * (pit - 1) - 2, PacY + VY[pdir - 1] * (pit - 1), BEAN_COLOR):
+                print ('eat big bean...')
                 for count in range(ENEMY_NUM):
                     if flag[count] != DEAD:
                         addscore(2000)
-                        screen.blit(enemy[flag[count]], (oldenemyX[count] - unit1, oldenemyY[count] - unit1))
+                        #screen.blit(enemy[flag[count]], (oldenemyX[count] - unit1, oldenemyY[count] - unit1))
                         flag[count] = FLEE
-                        screen.blit(enemy[flag[count]], (oldenemyX[count] - unit1, oldenemyY[count] - unit1))
+                        #screen.blit(enemy[flag[count]], (oldenemyX[count] - unit1, oldenemyY[count] - unit1))
                         control[count] = random.randint(0, 5)
             Fcolor = screen.get_at((PacX + VX[pdir - 1] * (pit - 1) - 1, PacY + VY[pdir - 1] * (pit - 1) - 1))
             pygame.draw.rect(screen, (0, 0, 0), (PacX + VX[pdir - 1] * (pit - 1) - 1, PacY + VY[pdir - 1] * (pit - 1) - 1, 2, 2))
@@ -425,6 +462,7 @@ def playpac():
             pygame.display.flip()
     if TurnOK(PacX, PacY) and not pointisthere(PacX + VX[newpdir - 1] * pit, PacY + VY[newpdir - 1] * pit, WALL_COLOR) or (newpdir == chdir(pdir, 2)):
         pdir = newpdir
+    background = screen.subsurface((0, 0, SCREEN_WIDTH, SCREEN_HEIGHT)).copy()
 
 def playenemy():
     # print ('playing enemy...')
