@@ -98,6 +98,8 @@ score = 0
 high = 0
 level = 1
 die = False
+newgame = True
+continuegame = True
 MusicOn = True
 
 # Level data
@@ -671,13 +673,11 @@ def Dying():
 
 def GameOver():
     print ('game over...')
-    global life, level, score
+    global life, level, score, continuegame, background, backgroundnopac, newgame
+    background = backgroundnopac
     font = pygame.font.SysFont(None, 72)
     text = font.render('GAME OVER', True, PAC_COLOR)
     screen.blit(text, (atom * 5, atom * 6))
-    # pygame.display.flip()
-    # WaitKey()
-    #  showfinalscore()
     font = pygame.font.SysFont(None, 48)
     text = font.render('CONTINUE(Y/N)? ', True, (255, 255, 255))
     screen.blit(text, (atom, atom * 11 + WALL_WIDTH))
@@ -688,15 +688,20 @@ def GameOver():
             if event.type == pygame.KEYDOWN:
                 key = event.key
     if key == pygame.K_n:
-        pygame.quit()
-        sys.exit()
-    life = 3
-    level = 1
-    score = 0
-    eat = 0
-    Title()
-    screen.fill((0, 0, 0))
-    makebackground()
+        #pygame.quit()
+        #sys.exit()
+        continuegame = False
+    else:
+        continuegame = True
+        newgame = True
+    #life = 3
+    #level = 1
+    #score = 0
+    #eat = 0
+    #Title()
+    #screen.fill((0, 0, 0))
+    #makebackground()
+    #background = screen.subsurface((0, 0, SCREEN_WIDTH, SCREEN_HEIGHT)).copy()
 
 def pacinit():
     print ('pac init...')
@@ -735,26 +740,29 @@ def enemyinit():
     pygame.display.flip()
 
 def main():
-    global background, die, life, level, score, high, eat, MBPtr
+    global background, die, life, level, score, high, eat, MBPtr, continuegame, newgame
     print ('main...')
     #INIT()
-    Title()
-    makeenemy()
-    makepac()
-    screen.fill((0, 0, 0))
-    random.seed()
-    MBPtr = 1
-    life = 4
-    level = 1
-    score = 0
-    high = 0
-    eat = 0
-    makebackground()
-    background = screen.subsurface((0, 0, SCREEN_WIDTH, SCREEN_HEIGHT)).copy()
-    showlives()
-    pygame.time.delay(1000) 
-    life = 3
-    while True:
+    newgame = True
+    while continuegame:
+        if newgame:
+            Title()
+            makeenemy()
+            makepac()
+            screen.fill((0, 0, 0))
+            random.seed()
+            MBPtr = 1
+            life = 4
+            level = 1
+            score = 0
+            high = 0
+            eat = 0
+            makebackground()
+            background = screen.subsurface((0, 0, SCREEN_WIDTH, SCREEN_HEIGHT)).copy()
+            showlives()
+            pygame.time.delay(1000) 
+            life = 3
+            newgame = False
         ClrBuffer()
         pacinit()
         enemyinit()
