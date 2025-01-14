@@ -54,6 +54,8 @@ VX = [0, SPEED, 0, -SPEED]
 VY = [-SPEED, 0, SPEED, 0]
 
 # Initialize Pygame
+pygame.mixer.pre_init(44100, -16, 2, 2048)
+pygame.mixer.init()
 pygame.init()
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Pyth-Man")
@@ -73,6 +75,7 @@ control = [0] * ENEMY_NUM
 oldenemyX = [0] * ENEMY_NUM
 oldenemyY = [0] * ENEMY_NUM
 background = None
+backgroundnopac = None
 
 pac = [[None for _ in range(5)] for _ in range(4)]
 pdir = RIGHT
@@ -85,6 +88,7 @@ oldpacY = 0
 life = 3
 pose = 5
 oldpose = 5
+chomp = 0
 eat = 0
 
 count = 0
@@ -237,22 +241,32 @@ def addscore(gain):
     #print ('adding score...')
     global score, high
     score += gain
-    box(SCREEN_WIDTH - 100, SCREEN_WIDTH, 0, 50,  1, 0)
-    font = pygame.font.SysFont(None, 48)
-    text = font.render(str(score), True, PAC_COLOR)
-    screen.blit(text, (SCREEN_WIDTH - 100, 0))
-    #print ('score: ' + str(score))
     if score > high:
         high = score
 
 def showscore():
-    print ('showing score...')
-    # screen.fill((0, 0, 0))
+    #print ('showing score...')
+    #pygame.mixer.Sound('assets/chomp.mp3').play()
+    box(SCREEN_WIDTH - 100, SCREEN_WIDTH, 0, 50,  1, 0)
+    font = pygame.font.SysFont(None, 48)
+    text = font.render(str(score), True, PAC_COLOR)
+    screen.blit(text, (SCREEN_WIDTH - 100, 0))
+    pygame.display.flip()
+
+def showfinalscore():
+    print ('showing final score...')
     font = pygame.font.SysFont(None, 36)
     text = font.render(f'YOUR SCORE: {score}', True, PAC_COLOR)
     screen.blit(text, (50, 40))
     text = font.render(f'HIGH SCORE: {high}', True, PAC_COLOR)
     screen.blit(text, (50, 70))
+    pygame.display.flip()
+
+def showlives():
+    box(0, SCREEN_WIDTH, 11*atom + WALL_WIDTH, 12*atom, 1, 0)
+    if life > 0:
+        for ct in range(1, life):
+            screen.blit(pac[1][1], (ct*atom, 11*atom + SPEED))
     pygame.display.flip()
 
 def box(xl, xr, yu, yd, bcolor, acolor):
@@ -264,44 +278,23 @@ def drawenemy(x, y, color):
     x = SCREEN_WIDTH / 2
     y = SCREEN_HEIGHT / 4
     box(x - unit1 - 1, x + unit1 + 1, y - unit1 - 1, y + unit1 + 1, 1, 0)
-    pygame.draw.arc(screen, ENEMY_COLOR, (x - unit1, y - unit1, unit1 * 2, unit1 * 2), 0, 3.14, 1)
-    pygame.draw.line(screen, ENEMY_COLOR, (x - unit1, y), (x - unit1, y + unit1), 1)
-    pygame.draw.line(screen, ENEMY_COLOR, (x - unit1, y + unit1), (x - unit1 + unit1 * 2 // 5, y + unit1 - unit1 * 2 // 6), 1)
-    pygame.draw.line(screen, ENEMY_COLOR, (x - unit1 + unit1 * 2 // 5, y + unit1 - unit1 * 2 // 6), (x - unit1 + unit1 * 4 // 5, y + unit1), 1)
-    pygame.draw.line(screen, ENEMY_COLOR, (x - unit1 + unit1 * 4 // 5, y + unit1), (x - unit1 + unit1 * 6 // 5, y + unit1 - unit1 * 2 // 6), 1)
-    pygame.draw.line(screen, ENEMY_COLOR, (x - unit1 + unit1 * 6 // 5, y + unit1 - unit1 * 2 // 6), (x - unit1 + unit1 * 8 // 5, y + unit1), 1)
-    pygame.draw.line(screen, ENEMY_COLOR, (x - unit1 + unit1 * 8 // 5, y + unit1), (x + unit1, y), 1)
-    pygame.draw.circle(screen, ENEMY_COLOR, (x - unit1 // 2, y), unit1 // 3, 1)
-    pygame.draw.circle(screen, ENEMY_COLOR, (x + unit1 // 2, y), unit1 // 3, 1)
+    pygame.draw.arc(screen, color, (x - unit1, y - unit1, unit1 * 2, unit1 * 2), 0, 3.14, 1)
+    pygame.draw.line(screen, color, (x - unit1, y), (x - unit1, y + unit1), 1)
+    pygame.draw.line(screen, color, (x - unit1, y + unit1), (x - unit1 + unit1 * 2 // 5, y + unit1 - unit1 * 2 // 6), 1)
+    pygame.draw.line(screen, color, (x - unit1 + unit1 * 2 // 5, y + unit1 - unit1 * 2 // 6), (x - unit1 + unit1 * 4 // 5, y + unit1), 1)
+    pygame.draw.line(screen, color, (x - unit1 + unit1 * 4 // 5, y + unit1), (x - unit1 + unit1 * 6 // 5, y + unit1 - unit1 * 2 // 6), 1)
+    pygame.draw.line(screen, color, (x - unit1 + unit1 * 6 // 5, y + unit1 - unit1 * 2 // 6), (x - unit1 + unit1 * 8 // 5, y + unit1), 1)
+    pygame.draw.line(screen, color, (x - unit1 + unit1 * 8 // 5, y + unit1), (x + unit1, y), 1)
+    pygame.draw.circle(screen, color, (x - unit1 // 2, y), unit1 // 3, 1)
+    pygame.draw.circle(screen, color, (x + unit1 // 2, y), unit1 // 3, 1)
     pygame.display.flip()
     rect1 = (x - unit1, y - unit1, unit1 * 2, unit1 * 2)
-    #enemy[FLEE] = screen.subsurface(rect1).copy()
-    #enemy[DEAD] = screen.subsurface(rect1).copy()
-    #enemy[FOLLOW] = screen.subsurface(rect1).copy()
-    #enemy[AROUND] = screen.subsurface(rect1).copy()
     return screen.subsurface(rect1).copy()
 
 def makeenemy():
     print ('making enemy...')
     x = SCREEN_WIDTH / 2
     y = SCREEN_HEIGHT / 4
-    box(x - unit1 - 1, x + unit1 + 1, y - unit1 - 1, y + unit1 + 1, 1, 0)
-    pygame.draw.arc(screen, ENEMY_COLOR, (x - unit1, y - unit1, unit1 * 2, unit1 * 2), 0, 3.14, 1)
-    pygame.draw.line(screen, ENEMY_COLOR, (x - unit1, y), (x - unit1, y + unit1), 1)
-    pygame.draw.line(screen, ENEMY_COLOR, (x - unit1, y + unit1), (x - unit1 + unit1 * 2 // 5, y + unit1 - unit1 * 2 // 6), 1)
-    pygame.draw.line(screen, ENEMY_COLOR, (x - unit1 + unit1 * 2 // 5, y + unit1 - unit1 * 2 // 6), (x - unit1 + unit1 * 4 // 5, y + unit1), 1)
-    pygame.draw.line(screen, ENEMY_COLOR, (x - unit1 + unit1 * 4 // 5, y + unit1), (x - unit1 + unit1 * 6 // 5, y + unit1 - unit1 * 2 // 6), 1)
-    pygame.draw.line(screen, ENEMY_COLOR, (x - unit1 + unit1 * 6 // 5, y + unit1 - unit1 * 2 // 6), (x - unit1 + unit1 * 8 // 5, y + unit1), 1)
-    pygame.draw.line(screen, ENEMY_COLOR, (x - unit1 + unit1 * 8 // 5, y + unit1), (x + unit1, y), 1)
-    pygame.draw.circle(screen, ENEMY_COLOR, (x - unit1 // 2, y), unit1 // 3, 1)
-    pygame.draw.circle(screen, ENEMY_COLOR, (x + unit1 // 2, y), unit1 // 3, 1)
-    pygame.display.flip()
-    rect1 = (x - unit1, y - unit1, unit1 * 2, unit1 * 2)
-    #enemy[count] = screen.subsurface(rect1).copy()
-    #enemy[FLEE] = screen.subsurface(rect1).copy()
-    #enemy[DEAD] = screen.subsurface(rect1).copy()
-    #enemy[FOLLOW] = screen.subsurface(rect1).copy()
-    #enemy[AROUND] = screen.subsurface(rect1).copy()
     enemy[FLEE] = drawenemy(x, y, ENEMY_FLEE_COLOR)
     enemy[DEAD] = drawenemy(x, y, ENEMY_COLOR)
     enemy[FOLLOW] = drawenemy(x, y, ENEMY_COLOR)
@@ -311,19 +304,14 @@ def makeenemy():
 def makepac():
     print ('making pac...')
     pparams = [[135,405,1],[45,315,2],[315,585,3],[225,495,4]]
-    # global pac
-    #x = 200
-    #y = 220
     x = SCREEN_WIDTH / 16 * 5
     y = SCREEN_HEIGHT / 2
     for dir in range(1, 5):
         for count in range(1, 6):
-            print ('making pac... ' + str(dir-1) + ' ' + str(count-1))
             x += VX[dir - 1] * 10
             y += VY[dir - 1] * 8
             a1 = (pparams[dir-1][0] - count * 9) /180*3.14
             a2 = (pparams[dir-1][1] + count * 9) /180*3.14
-            #print ('drawing arc... x:'+ str(x - unit1) + ' y:' + str(y - unit1) + ' w:' + str(unit1 * 2) + ' h:' + str(unit1 * 2) + ' a1:' + str(pparams[dir-1][0]) + ' r1:' + str(a1) + ' a2:' + str(pparams[dir-1][1]) + ' r2:' + str(a2))
             pygame.draw.arc(screen, PAC_COLOR, (x - unit1, y - unit1, unit1 * 2, unit1 * 2), a1, a2, 1)
             #
             # need more code to complete the pac drawing
@@ -342,11 +330,6 @@ def makebackground():
     font = pygame.font.SysFont(None, 48)
     text = font.render('PYTH-MAN', True, PAC_COLOR)
     screen.blit(text, (50, 0))
-    #for y in range(atom, maxY, atom):
-    #    for x in range(atom, maxX, atom):
-    #        box(x - 1, x + 1, y - 1, y + 1, BEAN_COLOR, 0)
-    #        print (str(x // atom - 1), str(y // atom - 1))
-    #for y in range(atom, maxY-atom*2, atom):
     # make the small beans
     dY = atom
     while True:
@@ -384,28 +367,20 @@ def makebackground():
                     #print ('(3:both)')
                     pygame.draw.line(screen, WALL_COLOR, (x, y), (x + atom, y), WALL_WIDTH)
                     pygame.draw.line(screen, WALL_COLOR, (x + atom, y), (x + atom, y + atom), WALL_WIDTH)
-    #LINE(atom*7, atom*6, atom*8, atom*6);
+    # make door for enemy
     pygame.draw.line(screen, DOOR_COLOR, (atom*7, atom*6), (atom*8, atom*6), WALL_WIDTH)
-    #IF life>0 THEN FOR ct:= 1 TO life-1 DO
-    if life > 0:
-        for ct in range(1, life):
-            #PUTIMAGE(15*atom+speed, ct*atom, pac[2,1]^, XORPUT);
-            #screen.blit(pac[2][1], (15*atom + SPEED, ct*atom))
-            screen.blit(pac[1][1], (ct*atom, 11*atom + SPEED))
-
-    pygame.display.flip()
-    addscore(0)
-    return screen.subsurface((0, 0, SCREEN_WIDTH, SCREEN_HEIGHT)).copy()
 
 def playpac():
     # print ('playing pac...')
-    global PacX, PacY, pdir, newpdir, pose, oldpacX, oldpacY, oldpdir, oldpose, eat, die, background, enemy, flag
-    # debug msg below
-    # print ('blit pac ' + str(oldpdir -1) + ' ' + str(oldpose - 1), (90, 0))
-    # screen.blit(pac[oldpdir - 1][oldpose - 1], (oldpacX - unit1, oldpacY - unit1))
-    # pygame.time.delay(500)
+    global PacX, PacY, pdir, newpdir, pose, oldpacX, oldpacY, oldpdir, oldpose, eat, die, background, backgroundnopac, enemy, flag, chomp
+    showscore()
+    showlives()
     box(oldpacX - unit1, oldpacX + unit1, oldpacY - unit1, oldpacY + unit1, 1, 0)
-    pygame.time.delay(30)
+    pygame.display.flip()
+    backgroundnopac = screen.subsurface((0, 0, SCREEN_WIDTH, SCREEN_HEIGHT)).copy()
+    if chomp == 1: 
+        pygame.mixer.Sound('assets/chomp.mp3').play()
+    chomp = chomp + 1 if chomp < 18 else 1
     pose = pose + 1 if pose < 5 else 1
     screen.blit(pac[pdir - 1][pose - 1], (PacX - unit1, PacY - unit1))
     pygame.display.flip()
@@ -429,7 +404,7 @@ def playpac():
             elif event.key == pygame.K_ESCAPE:
                 pygame.quit()
                 sys.exit()
-    if not pointisthere(PacX + VX[pdir - 1] * pit, PacY + VY[pdir - 1] * pit, WALL_COLOR):
+    if not pointisthere(PacX + VX[pdir - 1] * pit, PacY + VY[pdir - 1] * pit, WALL_COLOR) and not pointisthere(PacX + VX[pdir - 1] * pit, PacY + VY[pdir - 1] * pit, DOOR_COLOR):
         PacX += VX[pdir - 1]
         PacY += VY[pdir - 1]
         if PacX > maxX:
@@ -455,41 +430,43 @@ def playpac():
                         flag[count] = FLEE
                         #screen.blit(enemy[flag[count]], (oldenemyX[count] - unit1, oldenemyY[count] - unit1))
                         control[count] = random.randint(0, 5)
-            Fcolor = screen.get_at((PacX + VX[pdir - 1] * (pit - 1) - 1, PacY + VY[pdir - 1] * (pit - 1) - 1))
-            pygame.draw.rect(screen, (0, 0, 0), (PacX + VX[pdir - 1] * (pit - 1) - 1, PacY + VY[pdir - 1] * (pit - 1) - 1, 2, 2))
-            pygame.draw.rect(screen, (0, 0, 0), (PacX + VX[pdir - 1] * (pit - 1) - 2, PacY + VY[pdir - 1] * (pit - 1) - 2, 4, 4))
-            screen.set_at((PacX + VX[pdir - 1] * (pit - 1) - 1, PacY + VY[pdir - 1] * (pit - 1) - 1), Fcolor)
-            pygame.display.flip()
+            #Fcolor = screen.get_at((PacX + VX[pdir - 1] * (pit - 1) - 1, PacY + VY[pdir - 1] * (pit - 1) - 1))
+            #pygame.draw.rect(screen, (0, 0, 0), (PacX + VX[pdir - 1] * (pit - 1) - 1, PacY + VY[pdir - 1] * (pit - 1) - 1, 2, 2))
+            #pygame.draw.rect(screen, (0, 0, 0), (PacX + VX[pdir - 1] * (pit - 1) - 2, PacY + VY[pdir - 1] * (pit - 1) - 2, 4, 4))
+            #screen.set_at((PacX + VX[pdir - 1] * (pit - 1) - 1, PacY + VY[pdir - 1] * (pit - 1) - 1), Fcolor)
+            #pygame.display.flip()
     if TurnOK(PacX, PacY) and not pointisthere(PacX + VX[newpdir - 1] * pit, PacY + VY[newpdir - 1] * pit, WALL_COLOR) or (newpdir == chdir(pdir, 2)):
         pdir = newpdir
-    background = screen.subsurface((0, 0, SCREEN_WIDTH, SCREEN_HEIGHT)).copy()
 
 def playenemy():
     # print ('playing enemy...')
-    global die
+    global die, PacX, PacY
     for num in range(ENEMY_NUM):
         if flag[num] != DEAD:
-            #screen.blit(enemy[flag[num]], (oldenemyX[num] - unit1, oldenemyY[num] - unit1))
             #below is the original code to blank the enemy
             #box(oldenemyX[num] - unit1, oldenemyX[num] + unit1, oldenemyY[num] - unit1, oldenemyY[num] + unit1, 1, 0)
             screen.blit(enemy[flag[num]], (enemyX[num] - unit1, enemyY[num] - unit1))
+            #print ('enemy ' + str(num) + ' flag: ' + str(flag[num]) + ' x: ' + str(enemyX[num]) + ' y: ' + str(enemyY[num]))
             pygame.display.flip()
             oldenemyX[num] = enemyX[num]
             oldenemyY[num] = enemyY[num]
     for num in range(ENEMY_NUM):
         if abs(enemyX[num] - PacX) <= 20 and abs(enemyY[num] - PacY) <= 20:
+            print ('enemy ' + str(num) + ' flag: ' + str(flag[num]) + ' x: ' + str(enemyX[num]) + ' y: ' + str(enemyY[num]))
+            print ('pac die:' + str(die) + ' x: ' + str(PacX) + ' y: ' + str(PacY))
             if flag[num] != FLEE:
                 die = True
+                pygame.mixer.stop()
             else:
-                screen.blit(enemy[flag[num]], (oldenemyX[num] - unit1, oldenemyY[num] - unit1))
+                #screen.blit(enemy[flag[num]], (oldenemyX[num] - unit1, oldenemyY[num] - unit1))
                 control[num] = 0
                 flag[num] = DEAD
                 enemyX[num] = atom * 9 - atom // 2
                 enemyY[num] = atom * 6 - atom // 2
                 oldenemyX[num] = enemyX[num]
                 oldenemyY[num] = enemyY[num]
-                screen.blit(enemy[flag[num]], (oldenemyX[num] - unit1, oldenemyY[num] - unit1))
-                pygame.display.flip()
+                #screen.blit(enemy[flag[num]], (oldenemyX[num] - unit1, oldenemyY[num] - unit1))
+                #pygame.display.flip()
         if TurnOK(enemyX[num], enemyY[num]):
             control[num] += 1
             if control[num] == 10 and flag[num] == AROUND:
@@ -499,11 +476,11 @@ def playenemy():
                 flag[num] = AROUND
                 control[num] = 0
             elif control[num] == 15 and flag[num] == FLEE:
-                screen.blit(enemy[flag[num]], (oldenemyX[num] - unit1, oldenemyY[num] - unit1))
+                #screen.blit(enemy[flag[num]], (oldenemyX[num] - unit1, oldenemyY[num] - unit1))
                 flag[num] = FOLLOW
                 control[num] = 0
-                screen.blit(enemy[flag[num]], (oldenemyX[num] - unit1, oldenemyY[num] - unit1))
-                pygame.display.flip()
+                #screen.blit(enemy[flag[num]], (oldenemyX[num] - unit1, oldenemyY[num] - unit1))
+                #pygame.display.flip()
             elif control[num] == 20 and flag[num] == DEAD:
                 flag[num] = FOLLOW
                 control[num] = 0
@@ -556,9 +533,7 @@ def getnewedir(num):
         newedir[num] = edir[num]
 
 def ShowPic(Lvl):
-    print ('showing pic...')
-    #command = f'GIRL{Lvl}.VSF'
-    #os.system(f'SVSF.EXE {command}')
+    print ('showing picture for reward...')
 
 def Menu():
     print ('menu...')
@@ -599,18 +574,20 @@ def Title():
     MusicT = [2, 3, 4, 6, 6, 7, 6, 4, 2, 3, 4, 4, 3, 2, 3, 2, 3, 4, 6, 6, 7, 6, 4, 2, 3, 4, 4, 3, 3, 2]
     TimeT = [0, 0, 2, 2, 4, 1, 3, 3, 4, 1, 3, 3, 3, 3, 5, 1, 0, 1, 2, 4, 1, 3, 3, 4, 1, 3, 3, 3, 3, 7]
     Menu()
+    pygame.mixer.music.load('assets/intro.mp3')
+    pygame.mixer.music.play(0)
     screen.fill((0, 0, 0))
     font = pygame.font.SysFont(None, 72)
     text = font.render('PYTH-MAN', True, PAC_COLOR)
     screen.blit(text, (SCREEN_WIDTH // 64, SCREEN_HEIGHT // 2))
     font = pygame.font.SysFont(None, 36)
-    text = font.render('V-Rated', True, (0, 255, 255))
+    text = font.render('Not Rated', True, (0, 255, 255))
     title1xy = (SCREEN_WIDTH // 64, SCREEN_HEIGHT // 12 * 7)
     screen.blit(text, title1xy)
-    text = font.render('Version 2.0  By SSRTIST', True, (0, 255, 255))
+    text = font.render('Version 2.0  By ssrtist', True, (0, 255, 255))
     title1xy = (SCREEN_WIDTH // 64, SCREEN_HEIGHT // 12 * 8)
     screen.blit(text, title1xy)
-    text = font.render('Copyright SillyMelon Corp. 1992-2025.', True, (0, 255, 255))
+    text = font.render('Copyright SillyMelon Inc. 1992-2025.', True, (0, 255, 255))
     title1xy = (SCREEN_WIDTH // 64, SCREEN_HEIGHT // 12 * 9)
     screen.blit(text, title1xy)
     text = font.render('All Rights Reserved.', True, (0, 255, 255))
@@ -625,7 +602,6 @@ def Title():
     #    for event in pygame.event.get():
     #        if event.type == pygame.KEYDOWN:
     #            break
-    # pygame.mixer.music.stop()
 
 def coping():
     print ('coping...')
@@ -653,7 +629,7 @@ def coping():
         ShowPic(level)
         level += 1
         if level > MAX_LEVEL * SAME_LEVEL:
-            showscore()
+            showfinalscore()
             WaitKey()
             screen.fill((0, 0, 0))
             font = pygame.font.SysFont(None, 72)
@@ -665,7 +641,7 @@ def coping():
             pygame.quit()
             sys.exit()
         eat = 0
-        showscore()
+        showfinalscore()
         ClrBuffer()
         WaitKey()
         screen.fill((0, 0, 0))
@@ -674,8 +650,11 @@ def coping():
 def Dying():
     print ('dying...')
     global life
-    if life > 0:
-        screen.blit(pac[1][0], (15 * atom + SPEED, life * atom))
+    global PacX, PacY, pdir, newpdir, pose, oldpacX, oldpacY, oldpdir, oldpose, eat, die, background, backgroundnopac, enemy, flag
+    background = backgroundnopac
+    #pygame.time.delay(30)
+    #if life > 0:
+    #    screen.blit(pac[1][0], (15 * atom + SPEED, life * atom))
     for ct in range(1, 5):
         for tone in range(2, 12):
             screen.blit(pac[ct - 1][tone // 2 - 1], (PacX - unit1, PacY - unit1))
@@ -695,13 +674,13 @@ def GameOver():
     global life, level, score
     font = pygame.font.SysFont(None, 72)
     text = font.render('GAME OVER', True, PAC_COLOR)
-    screen.blit(text, (atom * 4 + 20, atom * 4))
+    screen.blit(text, (atom * 5, atom * 6))
     # pygame.display.flip()
     # WaitKey()
-    showscore()
-    font = pygame.font.SysFont(None, 36)
+    #  showfinalscore()
+    font = pygame.font.SysFont(None, 48)
     text = font.render('CONTINUE(Y/N)? ', True, (255, 255, 255))
-    screen.blit(text, (10, 400))
+    screen.blit(text, (atom, atom * 11 + WALL_WIDTH))
     pygame.display.flip()
     key = None
     while key not in [pygame.K_y, pygame.K_n]:
@@ -756,7 +735,7 @@ def enemyinit():
     pygame.display.flip()
 
 def main():
-    global background
+    global background, die, life, level, score, high, eat, MBPtr
     print ('main...')
     #INIT()
     Title()
@@ -765,12 +744,16 @@ def main():
     screen.fill((0, 0, 0))
     random.seed()
     MBPtr = 1
-    life = 3
+    life = 4
     level = 1
     score = 0
     high = 0
     eat = 0
-    background = makebackground()
+    makebackground()
+    background = screen.subsurface((0, 0, SCREEN_WIDTH, SCREEN_HEIGHT)).copy()
+    showlives()
+    pygame.time.delay(1000) 
+    life = 3
     while True:
         ClrBuffer()
         pacinit()
@@ -778,15 +761,18 @@ def main():
         die = False
         print ('before game loop...')
         print ('die: ' + str(die))
-        while not die: # and eat != BEAN_NUM[(level + 1) // SAME_LEVEL - 1]:
+        while not die and eat != BEAN_NUM[(level + 1) // SAME_LEVEL - 1]:
             # print ('inside game loop, die: ' + str(die) + ', eat: ' + str(eat))
             # play sprite sfx, not working
             # MBPtr = MBPtr + 1 if MBPtr < 9 else 1
             # playmusic(MUSIC_B[MBPtr - 1] * 100 + 400, 0, MusicOn)
             #repaint entire background before blitting enemies and pac
+            timer = 0
             screen.blit(background, (0,0))
             playpac()
             playenemy()
+            #pygame.time.delay(30)
+            timer += clock.tick(FPS)
         print ('after game loop...')
         coping()
 
