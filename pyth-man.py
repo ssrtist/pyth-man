@@ -200,37 +200,15 @@ def INIT():
     global driver, mode, atom, unit1, pit, MusicOn
     screen.fill((0, 0, 0))
     font = pygame.font.SysFont(None, 36)
-    text = font.render('Does this system has a VGA or SVGA card (Y/N)?', True, (255, 255, 255))
-    title1xy = (SCREEN_WIDTH // 64, SCREEN_HEIGHT // 24)
-    screen.blit(text, title1xy)
-    pygame.display.flip()
-
-    key = None
-    while key not in [pygame.K_y, pygame.K_n]:
-        for event in pygame.event.get():
-            if event.type == pygame.KEYDOWN:
-                key = event.key
-
-    if key == pygame.K_y:
-        driver = 0
-        mode = 1
-        #atom = 40
-    else:
-        print("Then Get ONE!!!  Step on this cheap computer!!")
-        pygame.quit()
-        sys.exit()
-
     text = font.render('DO YOU WANT MUSIC DURING GAME (Y/N)?', True, (255, 255, 255))
     title1xy = (SCREEN_WIDTH // 64, SCREEN_HEIGHT // 24 + 50)
     screen.blit(text, title1xy)
     pygame.display.flip()
-
     key = None
     while key not in [pygame.K_y, pygame.K_n]:
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:
                 key = event.key
-
     MusicOn = key == pygame.K_y
 
 def addscore(gain):
@@ -382,15 +360,16 @@ def makebackground():
 
 def playpac():
     # print ('playing pac...')
-    global PacX, PacY, pdir, newpdir, pose, oldpacX, oldpacY, oldpdir, oldpose, eat, die, background, backgroundnopac, enemy, flag, chomp
+    global PacX, PacY, pdir, newpdir, pose, oldpacX, oldpacY, oldpdir, oldpose, eat, die, background, backgroundnopac, enemy, flag, chomp, MusicOn
     showscore()
     showlives()
     box(oldpacX - unit1, oldpacX + unit1, oldpacY - unit1, oldpacY + unit1, 1, 0)
     pygame.display.flip()
     backgroundnopac = screen.subsurface((0, 0, SCREEN_WIDTH, SCREEN_HEIGHT)).copy()
-    if chomp == 1: 
-        pygame.mixer.Sound('assets/chomp.mp3').play()
-    chomp = chomp + 1 if chomp < 18 else 1
+    if MusicOn:
+        chomp = chomp + 1 if chomp < 18 else 1
+        if chomp == 1: 
+            pygame.mixer.Sound('assets/chomp.mp3').play()
     pose = pose + 1 if pose < 5 else 1
     screen.blit(pac[pdir - 1][pose - 1], (PacX - unit1, PacY - unit1))
     pygame.display.flip()
@@ -411,6 +390,9 @@ def playpac():
                 newpdir = RIGHT
             elif event.key == pygame.K_s:
                 MusicOn = not MusicOn
+                if not MusicOn:
+                    pygame.mixer.stop()
+                    chomp = 0
             elif event.key == pygame.K_ESCAPE:
                 pygame.quit()
                 sys.exit()
@@ -431,12 +413,12 @@ def playpac():
             addscore(100)
             if pointisthere(PacX + VX[pdir - 1] * (pit - 1) - 2, PacY + VY[pdir - 1] * (pit - 1), BEAN_COLOR):
                 print ('eat big bean...')
+                if MusicOn:
+                    pygame.mixer.Sound('assets/fruit.mp3').play()
                 for count in range(ENEMY_NUM):
                     if flag[count] != DEAD:
                         addscore(2000)
-                        #screen.blit(enemy[flag[count]], (oldenemyX[count] - unit1, oldenemyY[count] - unit1))
                         flag[count] = FLEE
-                        #screen.blit(enemy[flag[count]], (oldenemyX[count] - unit1, oldenemyY[count] - unit1))
                         control[count] = random.randint(0, 5)
             #Fcolor = screen.get_at((PacX + VX[pdir - 1] * (pit - 1) - 1, PacY + VY[pdir - 1] * (pit - 1) - 1))
             #pygame.draw.rect(screen, (0, 0, 0), (PacX + VX[pdir - 1] * (pit - 1) - 1, PacY + VY[pdir - 1] * (pit - 1) - 1, 2, 2))
@@ -466,15 +448,15 @@ def playenemy():
                 die = True
                 pygame.mixer.stop()
             else:
-                #screen.blit(enemy[flag[num]], (oldenemyX[num] - unit1, oldenemyY[num] - unit1))
+                #enemy dies
+                if MusicOn:
+                    pygame.mixer.Sound('assets/ghost.mp3').play()
                 control[num] = 0
                 flag[num] = DEAD
                 enemyX[num] = atom * 9 - atom // 2
                 enemyY[num] = atom * 6 - atom // 2
                 oldenemyX[num] = enemyX[num]
                 oldenemyY[num] = enemyY[num]
-                #screen.blit(enemy[flag[num]], (oldenemyX[num] - unit1, oldenemyY[num] - unit1))
-                #pygame.display.flip()
         if TurnOK(enemyX[num], enemyY[num]):
             control[num] += 1
             if control[num] == 10 and flag[num] == AROUND:
@@ -582,8 +564,9 @@ def Title():
     MusicT = [2, 3, 4, 6, 6, 7, 6, 4, 2, 3, 4, 4, 3, 2, 3, 2, 3, 4, 6, 6, 7, 6, 4, 2, 3, 4, 4, 3, 3, 2]
     TimeT = [0, 0, 2, 2, 4, 1, 3, 3, 4, 1, 3, 3, 3, 3, 5, 1, 0, 1, 2, 4, 1, 3, 3, 4, 1, 3, 3, 3, 3, 7]
     Menu()
-    pygame.mixer.music.load('assets/intro.mp3')
-    pygame.mixer.music.play(0)
+    if MusicOn:
+        pygame.mixer.music.load('assets/intro.mp3')
+        pygame.mixer.music.play(0)
     screen.fill((0, 0, 0))
     font = pygame.font.SysFont(None, 72)
     text = font.render('PYTH-MAN', True, PAC_COLOR)
@@ -654,22 +637,21 @@ def coping():
 def Dying():
     print ('dying...')
     global life
-    global PacX, PacY, pdir, newpdir, pose, oldpacX, oldpacY, oldpdir, oldpose, eat, die, background, backgroundnopac, enemy, flag
+    global PacX, PacY, pdir, newpdir, pose, oldpacX, oldpacY, oldpdir, oldpose, eat, die, background, backgroundnopac, enemy, flag, MusicOn
     background = backgroundnopac
     #pygame.time.delay(30)
+    if MusicOn:
+        pygame.mixer.Sound('assets/death.mp3').play()
+        pygame.time.delay(10)
     for ct in range(1, 5):
         for tone in range(2, 12):
-            screen.blit(pac[ct - 1][tone // 2 - 1], (PacX - unit1, PacY - unit1))
-            if MusicOn:
-                #pygame.mixer.music.play(0)
-                pygame.time.delay(10)
+            #this line should be for blanking the pac
+            #screen.blit(pac[ct - 1][tone // 2 - 1], (PacX - unit1, PacY - unit1))
+            print ('blit pac ' + str(ct - 1) + ' ' + str(tone // 2 - 1)) 
             pygame.time.delay(20)
-            screen.blit(pac[ct - 1][tone // 2 - 1], (PacX - unit1, PacY - unit1))
-    if MusicOn:
-        #pygame.mixer.music.play(0)
-        pygame.time.delay(10)
+            screen.blit(pac[ct - 1][tone // 2 - 1], (oldpacX - unit1, oldpacY - unit1))
+            pygame.display.flip()
     pygame.time.delay(100)
-    #pygame.mixer.music.stop()
 
 def GameOver():
     print ('game over...')

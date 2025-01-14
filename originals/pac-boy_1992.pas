@@ -573,12 +573,12 @@ VAR ct:integer;
 BEGIN
   IF life>0 THEN putimage(15*atom+speed, life*atom, pac[2,1]^, xorput);
   for ct:= 1 to 4 do
-  for tone:= 2 to 11 do
-      BEGIN
-        putimage(pacX-unit1, pacY-unit1, pac[ct, tone DIV 2]^, XORPUT);
-        IF MUSICON THEN SOUND(Tone*200); DELAY(20);
-        putimage(pacX-unit1, pacY-unit1, pac[ct, tone DIV 2]^, XORPUT);
-      END;
+    for tone:= 2 to 11 do
+        BEGIN
+          putimage(pacX-unit1, pacY-unit1, pac[ct, tone DIV 2]^, XORPUT);
+          IF MUSICON THEN SOUND(Tone*200); DELAY(20);
+          putimage(pacX-unit1, pacY-unit1, pac[ct, tone DIV 2]^, XORPUT);
+        END;
   IF MUSICON THEN SOUND(300);DELAY(100);
   NOSOUND;
 END;
