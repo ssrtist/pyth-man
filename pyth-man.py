@@ -2,13 +2,12 @@ import pygame
 import random
 import sys
 import os
+import math
 
 # Constants
 FPS = 30
 PATH = 'c:\\tp\\bgi'
-SAME_LEVEL = 2
-MAX_LEVEL = 2
-BEAN_NUM = [261, 223]
+MAX_LEVEL = 4
 ENEMY_NUM = 4
 MUSIC_B = [1, 2, 3, 4, 1, 2, 3, 4, 1]
 
@@ -96,13 +95,16 @@ tone = 0
 MBPtr = 0
 score = 0
 high = 0
-level = 1
 die = False
 newgame = True
+newlevel = True
 continuegame = True
 MusicOn = True
 
 # Level data
+SAME_LEVEL = 2
+BEAN_NUM = [261, 223]
+#BEAN_NUM = [10, 10] # Test data
 lrows = [['0000000000000000',
 '2311111311111330',
 '2120111001112030',
@@ -231,14 +233,6 @@ def INIT():
 
     MusicOn = key == pygame.K_y
 
-def playmusic(frequency, time, on):
-    print ('playing music...')
-    if not on:
-        # pygame.mixer.music.stop()
-        return
-    # pygame.mixer.music.play(-1)
-    # pygame.time.delay(time)
-
 def addscore(gain):
     #print ('adding score...')
     global score, high
@@ -248,8 +242,7 @@ def addscore(gain):
 
 def showscore():
     #print ('showing score...')
-    #pygame.mixer.Sound('assets/chomp.mp3').play()
-    box(SCREEN_WIDTH - 100, SCREEN_WIDTH, 0, 50,  1, 0)
+    box(SCREEN_WIDTH - 100, SCREEN_WIDTH, 0, 50,  0, 0)
     font = pygame.font.SysFont(None, 48)
     text = font.render(str(score), True, PAC_COLOR)
     screen.blit(text, (SCREEN_WIDTH - 100, 0))
@@ -274,12 +267,12 @@ def showlives():
 def box(xl, xr, yu, yd, bcolor, acolor):
     #print ('drawing box...')
     pygame.draw.rect(screen, acolor, (xl, yu, xr - xl, yd - yu))
-    pygame.draw.rect(screen, bcolor, (xl, yu, xr - xl, yd - yu), 1)
+    pygame.draw.rect(screen, bcolor, (xl, yu, xr - xl, yd - yu), WALL_WIDTH)
 
 def drawenemy(x, y, color):
     x = SCREEN_WIDTH / 2
     y = SCREEN_HEIGHT / 4
-    box(x - unit1 - 1, x + unit1 + 1, y - unit1 - 1, y + unit1 + 1, 1, 0)
+    box(x - unit1 - 1, x + unit1 + 1, y - unit1 - 1, y + unit1 + 1, 0, 0)
     pygame.draw.arc(screen, color, (x - unit1, y - unit1, unit1 * 2, unit1 * 2), 0, 3.14, 1)
     pygame.draw.line(screen, color, (x - unit1, y), (x - unit1, y + unit1), 1)
     pygame.draw.line(screen, color, (x - unit1, y + unit1), (x - unit1 + unit1 * 2 // 5, y + unit1 - unit1 * 2 // 6), 1)
@@ -303,6 +296,12 @@ def makeenemy():
     enemy[AROUND] = drawenemy(x, y, ENEMY_COLOR)
     pygame.time.delay(200)
 
+def point_on_circle(center, radius, angle_radians):
+    # Calculate the coordinates
+    x = center[0] + radius * math.cos(angle_radians)
+    y = center[1] - radius * math.sin(angle_radians)
+    return (x, y)
+
 def makepac():
     print ('making pac...')
     pparams = [[135,405,1],[45,315,2],[315,585,3],[225,495,4]]
@@ -315,16 +314,17 @@ def makepac():
             a1 = (pparams[dir-1][0] - count * 9) /180*3.14
             a2 = (pparams[dir-1][1] + count * 9) /180*3.14
             pygame.draw.arc(screen, PAC_COLOR, (x - unit1, y - unit1, unit1 * 2, unit1 * 2), a1, a2, 1)
-            #
+            p1 = point_on_circle((x, y), unit1, a1)
+            p2 = point_on_circle((x, y), unit1, a2)
+            pygame.draw.line(screen, PAC_COLOR, (x, y), p1, 1)
+            pygame.draw.line(screen, PAC_COLOR, (x, y), p2, 1)
             # need more code to complete the pac drawing
-            #
             pygame.display.flip()
             print ('capturing pac ' + str(dir-1) + ' ' + str(count-1))
-            # pac[dir - 1][count - 1] = pygame.Surface((unit1 * 2, unit1 * 2), pygame.SRCALPHA)
             rect1 = (x - unit1, y - unit1, unit1 * 2, unit1 * 2)
             pac[dir - 1][count - 1] = screen.subsurface(rect1).copy()
             pygame.time.delay(100)
-            box(x - unit1 - 1, x + unit1 + 1, y - unit1 - 1, y + unit1 + 1, 1, 0)
+            box(x - unit1 - 1, x + unit1 + 1, y - unit1 - 1, y + unit1 + 1, 0, 0)
 
 def makebackground():
     print ('background...')
@@ -353,8 +353,7 @@ def makebackground():
         for ix in range(0, 16, 1):
             x = ix * atom
             y = iy * atom
-            #box(x - 1, x + 1, y - 1, y + 1, BEAN_COLOR, 0)
-            mcell = (lrows[0][iy][ix])
+            mcell = (lrows[level % SAME_LEVEL -1][iy][ix])
             match mcell:
                 case '0':
                     1 == 1
@@ -369,6 +368,15 @@ def makebackground():
                     #print ('(3:both)')
                     pygame.draw.line(screen, WALL_COLOR, (x, y), (x + atom, y), WALL_WIDTH)
                     pygame.draw.line(screen, WALL_COLOR, (x + atom, y), (x + atom, y + atom), WALL_WIDTH)
+    # clear boxes
+    for BoxNo in range(1, 20):
+        sl = lsides[level % SAME_LEVEL - 1][BoxNo - 1][0]
+        sr = lsides[level % SAME_LEVEL - 1][BoxNo - 1][1]
+        su = lsides[level % SAME_LEVEL - 1][BoxNo - 1][2]
+        sd = lsides[level % SAME_LEVEL - 1][BoxNo - 1][3]
+        print ('clearing level ' + str(level) + ' box ' + str(BoxNo) + ' ' + str(sl) + ' ' + str(sr) + ' ' + str(su) + ' ' + str(sd))
+        box(sl * atom, sr * atom, su * atom, sd * atom, WALL_COLOR, 0)
+
     # make door for enemy
     pygame.draw.line(screen, DOOR_COLOR, (atom*7, atom*6), (atom*8, atom*6), WALL_WIDTH)
 
@@ -418,8 +426,6 @@ def playpac():
         if PacY < 0:
             PacY = maxY
         if pointisthere(PacX + VX[pdir - 1] * (pit - 1) - 1, PacY + VY[pdir - 1] * (pit - 1), BEAN_COLOR):
-            # if MusicOn:
-                # pygame.mixer.music.play(0)
             # print ('eat bean...')
             eat += 1
             addscore(100)
@@ -596,19 +602,11 @@ def Title():
     title1xy = (SCREEN_WIDTH // 64, SCREEN_HEIGHT // 12 * 10)
     screen.blit(text, title1xy)
     pygame.display.flip()
-    ClrBuffer()
-    #MTPtr = 0
-    #while MTPtr < 30:
-    #    playmusic(MusicT[MTPtr] * 100 + 400, TimeT[MTPtr] * 100 + 50, MusicOn)
-    #    MTPtr += 1
-    #    for event in pygame.event.get():
-    #        if event.type == pygame.KEYDOWN:
-    #            break
 
 def coping():
     print ('coping...')
     # this function is to deal with death or passing level, death can lead to game over
-    global life, level, score, eat, die
+    global life, level, score, eat, die, newlevel, MAX_LEVEL
     outX = atom * 4
     outY = atom * 4
     print ('die: ' + str(die))
@@ -621,33 +619,37 @@ def coping():
             # dying, restart level 
             Dying()
     else:
-        # passing level, can lead to game over (win)
+        # cleared level, can lead to game over (win)
         font = pygame.font.SysFont(None, 72)
-        text = font.render('You win', True, PAC_COLOR)
-        screen.blit(text, (outX, outY))
+        text = font.render('LEVEL CLEARED', True, PAC_COLOR)
+        screen.blit(text, (atom * 5, atom * 6))
+        font = pygame.font.SysFont(None, 48)
+        text = font.render('Press Any Key to Continue...', True, (255, 255, 255))
+        screen.blit(text, (atom, atom * 11 + WALL_WIDTH))
         pygame.display.flip()
         ClrBuffer()
         WaitKey()
         ShowPic(level)
         level += 1
-        if level > MAX_LEVEL * SAME_LEVEL:
-            showfinalscore()
-            WaitKey()
+        newlevel = True
+        print ('level: ' + str(level))
+        if level > MAX_LEVEL:
+            #showfinalscore()
+            #WaitKey()
             screen.fill((0, 0, 0))
             font = pygame.font.SysFont(None, 72)
-            text = font.render('THE END.', True, (255, 0, 0))
-            screen.blit(text, (150, 250))
+            text = font.render('YOU WIN!', True, PAC_COLOR)
+            screen.blit(text, (atom * 5, atom * 6))
+            font = pygame.font.SysFont(None, 48)
+            text = font.render('Press Any Key to Exit...', True, (255, 255, 255))
+            screen.blit(text, (atom, atom * 11 + WALL_WIDTH))
             pygame.display.flip()
+            showscore()
+            pygame.time.delay(2000)
             ClrBuffer()
             WaitKey()
             pygame.quit()
             sys.exit()
-        eat = 0
-        showfinalscore()
-        ClrBuffer()
-        WaitKey()
-        screen.fill((0, 0, 0))
-        makebackground()
 
 def Dying():
     print ('dying...')
@@ -655,8 +657,6 @@ def Dying():
     global PacX, PacY, pdir, newpdir, pose, oldpacX, oldpacY, oldpdir, oldpose, eat, die, background, backgroundnopac, enemy, flag
     background = backgroundnopac
     #pygame.time.delay(30)
-    #if life > 0:
-    #    screen.blit(pac[1][0], (15 * atom + SPEED, life * atom))
     for ct in range(1, 5):
         for tone in range(2, 12):
             screen.blit(pac[ct - 1][tone // 2 - 1], (PacX - unit1, PacY - unit1))
@@ -694,14 +694,6 @@ def GameOver():
     else:
         continuegame = True
         newgame = True
-    #life = 3
-    #level = 1
-    #score = 0
-    #eat = 0
-    #Title()
-    #screen.fill((0, 0, 0))
-    #makebackground()
-    #background = screen.subsurface((0, 0, SCREEN_WIDTH, SCREEN_HEIGHT)).copy()
 
 def pacinit():
     print ('pac init...')
@@ -719,7 +711,6 @@ def pacinit():
     oldpose = 5
     pose = 5
     screen.blit(pac[1][4], (PacX - unit1, PacY - unit1))
-    #pygame.time.delay(2000)
     pygame.display.flip()
 
 def enemyinit():
@@ -740,7 +731,7 @@ def enemyinit():
     pygame.display.flip()
 
 def main():
-    global background, die, life, level, score, high, eat, MBPtr, continuegame, newgame
+    global background, die, life, level, score, high, eat, MBPtr, continuegame, newgame, newlevel
     print ('main...')
     #INIT()
     newgame = True
@@ -763,6 +754,15 @@ def main():
             pygame.time.delay(1000) 
             life = 3
             newgame = False
+            newlevel = False
+        elif newlevel:
+            #screen.fill((0, 0, 0))
+            eat = 0
+            makebackground()
+            background = screen.subsurface((0, 0, SCREEN_WIDTH, SCREEN_HEIGHT)).copy()
+            showlives()
+            pygame.time.delay(1000)
+            newlevel = False
         ClrBuffer()
         pacinit()
         enemyinit()
@@ -771,9 +771,6 @@ def main():
         print ('die: ' + str(die))
         while not die and eat != BEAN_NUM[(level + 1) // SAME_LEVEL - 1]:
             # print ('inside game loop, die: ' + str(die) + ', eat: ' + str(eat))
-            # play sprite sfx, not working
-            # MBPtr = MBPtr + 1 if MBPtr < 9 else 1
-            # playmusic(MUSIC_B[MBPtr - 1] * 100 + 400, 0, MusicOn)
             #repaint entire background before blitting enemies and pac
             timer = 0
             screen.blit(background, (0,0))
