@@ -585,7 +585,7 @@ def coping():
     global life, level, score, eat, die, newlevel, MAX_LEVEL
     outX = atom * 4
     outY = atom * 4
-    print ('die: ' + str(die) + 'eat: ' + str(eat))
+    print ('die: ' + str(die) + ', eat: ' + str(eat))
     if die:
         life -= 1
         if life == 0:
